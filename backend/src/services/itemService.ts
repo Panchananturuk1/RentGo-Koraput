@@ -1,4 +1,5 @@
 import { prisma } from '../index';
+import { Prisma } from '@prisma/client';
 
 interface ItemQuery {
   search?: string;
@@ -68,15 +69,15 @@ export const getItems = async (query: ItemQuery = {}) => {
   const totalItems = await prisma.item.count({ where });
   
   // Calculate average rating
-  const itemsWithRating = items.map(item => {
+  const itemsWithRating = items.map((item: any) => {
     const averageRating = item.reviews.length
-      ? item.reviews.reduce((sum, review) => sum + review.rating, 0) / item.reviews.length
+      ? item.reviews.reduce((sum: number, review: any) => sum + review.rating, 0) / item.reviews.length
       : 0;
       
     return {
       ...item,
       averageRating,
-      primaryImage: item.images[0]?.imageUrl || null
+      primaryImage: item.images[0]?.url || null
     };
   });
   
@@ -136,7 +137,7 @@ export const getItemById = async (id: string) => {
   }
   
   const averageRating = item.reviews.length
-    ? item.reviews.reduce((sum, review) => sum + review.rating, 0) / item.reviews.length
+    ? item.reviews.reduce((sum: number, review: any) => sum + review.rating, 0) / item.reviews.length
     : 0;
     
   return {
@@ -146,7 +147,7 @@ export const getItemById = async (id: string) => {
 };
 
 export const createItem = async (itemData: any, userId: string) => {
-  const { name, description, categoryId, price, priceUnit, location, latitude, longitude, images } = itemData;
+  const { name, description, categoryId, price, priceUnit, location, images } = itemData;
   
   // Create item
   const item = await prisma.item.create({
@@ -157,9 +158,7 @@ export const createItem = async (itemData: any, userId: string) => {
       ownerId: userId,
       price: parseFloat(price),
       priceUnit,
-      location,
-      latitude: latitude ? parseFloat(latitude) : null,
-      longitude: longitude ? parseFloat(longitude) : null
+      location
     }
   });
   
@@ -170,7 +169,7 @@ export const createItem = async (itemData: any, userId: string) => {
         prisma.itemImage.create({
           data: {
             itemId: item.id,
-            imageUrl,
+            url: imageUrl,
             isPrimary: index === 0
           }
         })
@@ -197,7 +196,7 @@ export const updateItem = async (id: string, itemData: any, userId: string) => {
   }
   
   // Update item
-  const { name, description, categoryId, price, priceUnit, location, latitude, longitude, available } = itemData;
+  const { name, description, categoryId, price, priceUnit, location, available } = itemData;
   
   await prisma.item.update({
     where: { id },
@@ -208,8 +207,6 @@ export const updateItem = async (id: string, itemData: any, userId: string) => {
       price: price ? parseFloat(price) : undefined,
       priceUnit,
       location,
-      latitude: latitude ? parseFloat(latitude) : undefined,
-      longitude: longitude ? parseFloat(longitude) : undefined,
       available
     }
   });
@@ -227,7 +224,7 @@ export const updateItem = async (id: string, itemData: any, userId: string) => {
         prisma.itemImage.create({
           data: {
             itemId: id,
-            imageUrl,
+            url: imageUrl,
             isPrimary: index === 0
           }
         })
@@ -253,7 +250,7 @@ export const deleteItem = async (id: string, userId: string) => {
     throw new Error('Unauthorized to delete this item');
   }
   
-  // Delete item (will cascade delete images)
+  // Delete item and related images
   await prisma.item.delete({
     where: { id }
   });

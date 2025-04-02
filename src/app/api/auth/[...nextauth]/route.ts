@@ -15,7 +15,11 @@ const handler = NextAuth({
         }
 
         try {
-          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/auth/login`, {
+          // Use 127.0.0.1 (IPv4) instead of localhost to avoid IPv6 issues
+          const apiUrl = 'http://127.0.0.1:5000';
+          console.log('NextAuth: Using API URL for login:', apiUrl);
+
+          const res = await fetch(`${apiUrl}/api/auth/login`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

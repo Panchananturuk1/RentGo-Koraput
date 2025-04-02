@@ -1,44 +1,50 @@
-import express, { Request, Response } from 'express';
+import express, { Request, Response, RequestHandler } from 'express';
 import { getItems, getItemById, createItem, updateItem, deleteItem } from '../services/itemService';
 import { authenticateUser } from '../utils/middleware';
 
 const router = express.Router();
 
+interface AuthRequest extends Request {
+  user?: any;
+}
+
 // Get all items with filtering
-router.get('/', async (req: Request, res: Response) => {
+const getAllItems: RequestHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     const result = await getItems(req.query);
     res.json(result);
   } catch (error: any) {
     res.status(500).json({ message: 'Error fetching items', error: error.message });
   }
-});
+};
 
 // Get item by ID
-router.get('/:id', async (req: Request, res: Response) => {
+const getItem: RequestHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     
     const item = await getItemById(id);
     
     if (!item) {
-      return res.status(404).json({ message: 'Item not found' });
+      res.status(404).json({ message: 'Item not found' });
+      return;
     }
     
     res.json({ item });
   } catch (error: any) {
     res.status(500).json({ message: 'Error fetching item', error: error.message });
   }
-});
+};
 
 // Create item
-router.post('/', authenticateUser, async (req: Request & { user?: any }, res: Response) => {
+const createNewItem: RequestHandler = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const itemData = req.body;
     
     // Validate required fields
     if (!itemData.name || !itemData.description || !itemData.categoryId || !itemData.price || !itemData.priceUnit || !itemData.location) {
-      return res.status(400).json({ message: 'Missing required fields' });
+      res.status(400).json({ message: 'Missing required fields' });
+      return;
     }
     
     const item = await createItem(itemData, req.user.id);
@@ -50,10 +56,10 @@ router.post('/', authenticateUser, async (req: Request & { user?: any }, res: Re
   } catch (error: any) {
     res.status(500).json({ message: 'Error creating item', error: error.message });
   }
-});
+};
 
 // Update item
-router.put('/:id', authenticateUser, async (req: Request & { user?: any }, res: Response) => {
+const updateExistingItem: RequestHandler = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const itemData = req.body;
@@ -66,19 +72,21 @@ router.put('/:id', authenticateUser, async (req: Request & { user?: any }, res: 
     });
   } catch (error: any) {
     if (error.message === 'Item not found') {
-      return res.status(404).json({ message: error.message });
+      res.status(404).json({ message: error.message });
+      return;
     }
     
     if (error.message === 'Unauthorized to update this item') {
-      return res.status(403).json({ message: error.message });
+      res.status(403).json({ message: error.message });
+      return;
     }
     
     res.status(500).json({ message: 'Error updating item', error: error.message });
   }
-});
+};
 
 // Delete item
-router.delete('/:id', authenticateUser, async (req: Request & { user?: any }, res: Response) => {
+const deleteExistingItem: RequestHandler = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     
@@ -87,15 +95,24 @@ router.delete('/:id', authenticateUser, async (req: Request & { user?: any }, re
     res.json({ message: 'Item deleted successfully' });
   } catch (error: any) {
     if (error.message === 'Item not found') {
-      return res.status(404).json({ message: error.message });
+      res.status(404).json({ message: error.message });
+      return;
     }
     
     if (error.message === 'Unauthorized to delete this item') {
-      return res.status(403).json({ message: error.message });
+      res.status(403).json({ message: error.message });
+      return;
     }
     
     res.status(500).json({ message: 'Error deleting item', error: error.message });
   }
-});
+};
+
+// Route handlers
+router.get('/', getAllItems);
+router.get('/:id', getItem);
+router.post('/', authenticateUser, createNewItem);
+router.put('/:id', authenticateUser, updateExistingItem);
+router.delete('/:id', authenticateUser, deleteExistingItem);
 
 export default router; 

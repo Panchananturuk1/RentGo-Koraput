@@ -1,31 +1,35 @@
-import express, { Request, Response } from 'express';
+import express, { Request, Response, RequestHandler } from 'express';
 import { getUserBookings, getOwnerBookings, getBookingById, createBooking, updateBookingStatus } from '../services/bookingService';
 import { authenticateUser } from '../utils/middleware';
 
 const router = express.Router();
 
+interface AuthRequest extends Request {
+  user?: any;
+}
+
 // Get user bookings
-router.get('/user', authenticateUser, async (req: Request & { user?: any }, res: Response) => {
+const getUserBookingsHandler: RequestHandler = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const bookings = await getUserBookings(req.user.id);
     res.json({ bookings });
   } catch (error: any) {
     res.status(500).json({ message: 'Error fetching bookings', error: error.message });
   }
-});
+};
 
 // Get owner bookings
-router.get('/owner', authenticateUser, async (req: Request & { user?: any }, res: Response) => {
+const getOwnerBookingsHandler: RequestHandler = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const bookings = await getOwnerBookings(req.user.id);
     res.json({ bookings });
   } catch (error: any) {
     res.status(500).json({ message: 'Error fetching bookings', error: error.message });
   }
-});
+};
 
 // Get booking by ID
-router.get('/:id', authenticateUser, async (req: Request & { user?: any }, res: Response) => {
+const getBookingByIdHandler: RequestHandler = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     
@@ -34,25 +38,28 @@ router.get('/:id', authenticateUser, async (req: Request & { user?: any }, res: 
     res.json({ booking });
   } catch (error: any) {
     if (error.message === 'Booking not found') {
-      return res.status(404).json({ message: error.message });
+      res.status(404).json({ message: error.message });
+      return;
     }
     
     if (error.message === 'Unauthorized to view this booking') {
-      return res.status(403).json({ message: error.message });
+      res.status(403).json({ message: error.message });
+      return;
     }
     
     res.status(500).json({ message: 'Error fetching booking', error: error.message });
   }
-});
+};
 
 // Create booking
-router.post('/', authenticateUser, async (req: Request & { user?: any }, res: Response) => {
+const createBookingHandler: RequestHandler = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const bookingData = req.body;
     
     // Validate required fields
     if (!bookingData.itemId || !bookingData.startDate || !bookingData.endDate) {
-      return res.status(400).json({ message: 'Missing required fields' });
+      res.status(400).json({ message: 'Missing required fields' });
+      return;
     }
     
     const booking = await createBooking(bookingData, req.user.id);
@@ -67,15 +74,16 @@ router.post('/', authenticateUser, async (req: Request & { user?: any }, res: Re
       error.message === 'You cannot book your own item' ||
       error.message === 'Item is not available for the selected dates'
     ) {
-      return res.status(400).json({ message: error.message });
+      res.status(400).json({ message: error.message });
+      return;
     }
     
     res.status(500).json({ message: 'Error creating booking', error: error.message });
   }
-});
+};
 
 // Update booking status
-router.put('/:id/status', authenticateUser, async (req: Request & { user?: any }, res: Response) => {
+const updateBookingStatusHandler: RequestHandler = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const { status } = req.body;
@@ -83,7 +91,8 @@ router.put('/:id/status', authenticateUser, async (req: Request & { user?: any }
     // Validate status
     const validStatuses = ['pending', 'confirmed', 'cancelled', 'completed'];
     if (!status || !validStatuses.includes(status)) {
-      return res.status(400).json({ message: 'Invalid status' });
+      res.status(400).json({ message: 'Invalid status' });
+      return;
     }
     
     const booking = await updateBookingStatus(id, status, req.user.id);
@@ -94,15 +103,24 @@ router.put('/:id/status', authenticateUser, async (req: Request & { user?: any }
     });
   } catch (error: any) {
     if (error.message === 'Booking not found') {
-      return res.status(404).json({ message: error.message });
+      res.status(404).json({ message: error.message });
+      return;
     }
     
     if (error.message === 'Unauthorized to update this booking') {
-      return res.status(403).json({ message: error.message });
+      res.status(403).json({ message: error.message });
+      return;
     }
     
     res.status(500).json({ message: 'Error updating booking status', error: error.message });
   }
-});
+};
+
+// Routes
+router.get('/user', authenticateUser, getUserBookingsHandler);
+router.get('/owner', authenticateUser, getOwnerBookingsHandler);
+router.get('/:id', authenticateUser, getBookingByIdHandler);
+router.post('/', authenticateUser, createBookingHandler);
+router.put('/:id/status', authenticateUser, updateBookingStatusHandler);
 
 export default router; 

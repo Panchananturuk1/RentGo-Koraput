@@ -1,11 +1,15 @@
-import express, { Request, Response } from 'express';
+import express, { Request, Response, RequestHandler } from 'express';
 import { prisma } from '../index';
 import { authenticateUser } from '../utils/middleware';
 
 const router = express.Router();
 
+interface AuthRequest extends Request {
+  user?: any;
+}
+
 // Get reviews for an item
-router.get('/item/:itemId', async (req: Request, res: Response) => {
+const getItemReviews: RequestHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     const { itemId } = req.params;
     
@@ -28,53 +32,42 @@ router.get('/item/:itemId', async (req: Request, res: Response) => {
   } catch (error: any) {
     res.status(500).json({ message: 'Error fetching reviews', error: error.message });
   }
-});
+};
 
 // Create review
-router.post('/', authenticateUser, async (req: Request & { user?: any }, res: Response) => {
+const createReview: RequestHandler = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { bookingId, itemId, rating, comment } = req.body;
+    const { itemId, rating, comment } = req.body;
     
     // Validate required fields
-    if (!bookingId || !itemId || !rating) {
-      return res.status(400).json({ message: 'Missing required fields' });
+    if (!itemId || !rating) {
+      res.status(400).json({ message: 'Missing required fields' });
+      return;
     }
     
-    // Validate booking exists and belongs to user
-    const booking = await prisma.booking.findUnique({
-      where: { id: bookingId },
-      select: { id: true, userId: true, itemId: true, status: true }
+    // Validate item exists
+    const item = await prisma.item.findUnique({
+      where: { id: itemId },
     });
     
-    if (!booking) {
-      return res.status(404).json({ message: 'Booking not found' });
+    if (!item) {
+      res.status(404).json({ message: 'Item not found' });
+      return;
     }
     
-    if (booking.userId !== req.user.id) {
-      return res.status(403).json({ message: 'Unauthorized to review this booking' });
-    }
-    
-    if (booking.itemId !== itemId) {
-      return res.status(400).json({ message: 'Item ID does not match booking' });
-    }
-    
-    if (booking.status !== 'completed') {
-      return res.status(400).json({ message: 'Booking must be completed to leave a review' });
-    }
-    
-    // Check if user already reviewed this booking
+    // Check if user already reviewed this item
     const existingReview = await prisma.review.findFirst({
-      where: { bookingId, userId: req.user.id }
+      where: { itemId, userId: req.user.id }
     });
     
     if (existingReview) {
-      return res.status(400).json({ message: 'You have already reviewed this booking' });
+      res.status(400).json({ message: 'You have already reviewed this item' });
+      return;
     }
     
     // Create review
     const review = await prisma.review.create({
       data: {
-        bookingId,
         itemId,
         userId: req.user.id,
         rating: Number(rating),
@@ -99,17 +92,18 @@ router.post('/', authenticateUser, async (req: Request & { user?: any }, res: Re
   } catch (error: any) {
     res.status(500).json({ message: 'Error creating review', error: error.message });
   }
-});
+};
 
 // Update review
-router.put('/:id', authenticateUser, async (req: Request & { user?: any }, res: Response) => {
+const updateReview: RequestHandler = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const { rating, comment } = req.body;
     
     // Validate required fields
     if (!rating) {
-      return res.status(400).json({ message: 'Rating is required' });
+      res.status(400).json({ message: 'Rating is required' });
+      return;
     }
     
     // Validate review exists and belongs to user
@@ -119,11 +113,13 @@ router.put('/:id', authenticateUser, async (req: Request & { user?: any }, res: 
     });
     
     if (!existingReview) {
-      return res.status(404).json({ message: 'Review not found' });
+      res.status(404).json({ message: 'Review not found' });
+      return;
     }
     
     if (existingReview.userId !== req.user.id) {
-      return res.status(403).json({ message: 'Unauthorized to update this review' });
+      res.status(403).json({ message: 'Unauthorized to update this review' });
+      return;
     }
     
     // Update review
@@ -152,10 +148,10 @@ router.put('/:id', authenticateUser, async (req: Request & { user?: any }, res: 
   } catch (error: any) {
     res.status(500).json({ message: 'Error updating review', error: error.message });
   }
-});
+};
 
 // Delete review
-router.delete('/:id', authenticateUser, async (req: Request & { user?: any }, res: Response) => {
+const deleteReview: RequestHandler = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     
@@ -166,11 +162,13 @@ router.delete('/:id', authenticateUser, async (req: Request & { user?: any }, re
     });
     
     if (!existingReview) {
-      return res.status(404).json({ message: 'Review not found' });
+      res.status(404).json({ message: 'Review not found' });
+      return;
     }
     
     if (existingReview.userId !== req.user.id) {
-      return res.status(403).json({ message: 'Unauthorized to delete this review' });
+      res.status(403).json({ message: 'Unauthorized to delete this review' });
+      return;
     }
     
     // Delete review
@@ -182,6 +180,12 @@ router.delete('/:id', authenticateUser, async (req: Request & { user?: any }, re
   } catch (error: any) {
     res.status(500).json({ message: 'Error deleting review', error: error.message });
   }
-});
+};
+
+// Routes
+router.get('/item/:itemId', getItemReviews);
+router.post('/', authenticateUser, createReview);
+router.put('/:id', authenticateUser, updateReview);
+router.delete('/:id', authenticateUser, deleteReview);
 
 export default router; 

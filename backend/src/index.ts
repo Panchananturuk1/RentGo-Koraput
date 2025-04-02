@@ -18,10 +18,12 @@ dotenv.config();
 const app = express();
 export const prisma = new PrismaClient();
 
-// CORS configuration
+// CORS configuration - allow all origins during development
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true
+  origin: '*', // Allow all origins in development
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Middleware
@@ -37,6 +39,11 @@ app.use('/api/bookings', bookingRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/categories', categoryRoutes);
 
+// Add test route
+app.get('/api/test', (req, res) => {
+  res.json({ message: 'Backend server is running properly!' });
+});
+
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error(err.stack);
@@ -46,7 +53,10 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   });
 });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+// Parse port from environment or use default
+const PORT = parseInt(process.env.PORT || '5000');
+// Listen on all network interfaces
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`API available at http://localhost:${PORT}`);
 }); 

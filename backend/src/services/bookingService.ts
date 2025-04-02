@@ -192,8 +192,7 @@ export const createBooking = async (bookingData: any, userId: string) => {
       startDate: new Date(startDate),
       endDate: new Date(endDate),
       status: 'pending',
-      totalPrice,
-      paymentStatus: 'pending'
+      totalPrice
     },
     include: {
       item: {

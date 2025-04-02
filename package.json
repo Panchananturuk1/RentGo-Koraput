@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:all": "start npm run dev && start npm run dev:backend",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"

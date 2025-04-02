@@ -1,61 +1,68 @@
-import express, { Request, Response } from 'express';
+import express, { Request, Response, RequestHandler } from 'express';
 import { findUserById, updateUser } from '../services/userService';
 import { authenticateUser } from '../utils/middleware';
 
 const router = express.Router();
 
-// Get user profile
-router.get('/me', authenticateUser, async (req: Request & { user?: any }, res: Response) => {
+interface AuthRequest extends Request {
+  user?: any;
+}
+
+// Get current user profile
+const getCurrentUser: RequestHandler = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    res.json({ user: req.user });
+    const user = await findUserById(req.user.id);
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+    res.json(user);
   } catch (error: any) {
     res.status(500).json({ message: 'Error fetching user profile', error: error.message });
   }
-});
+};
 
-// Update user profile
-router.put('/me', authenticateUser, async (req: Request & { user?: any }, res: Response) => {
+// Update current user profile
+const updateCurrentUser: RequestHandler = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { firstName, lastName, phone, password } = req.body;
-    
-    const updatedUser = await updateUser(req.user.id, {
-      firstName,
-      lastName,
-      phone,
-      password
-    });
-    
-    res.json({
-      message: 'Profile updated successfully',
-      user: updatedUser
-    });
+    const { firstName, lastName, phone } = req.body;
+    const user = await updateUser(req.user.id, { firstName, lastName, phone });
+    res.json(user);
   } catch (error: any) {
-    res.status(500).json({ message: 'Error updating profile', error: error.message });
+    res.status(500).json({ message: 'Error updating user profile', error: error.message });
   }
-});
+};
 
-// Get user by ID
-router.get('/:id', async (req: Request, res: Response) => {
+// Delete current user account
+const deleteCurrentUser: RequestHandler = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
-    
-    const user = await findUserById(id);
-    
+    // TODO: Implement deleteUser in userService
+    res.status(501).json({ message: 'Delete user functionality not implemented yet' });
+  } catch (error: any) {
+    res.status(500).json({ message: 'Error deleting user account', error: error.message });
+  }
+};
+
+// Get user by ID (admin only)
+const getUserByIdRoute: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const user = await findUserById(req.params.id);
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      res.status(404).json({ message: 'User not found' });
+      return;
     }
-    
-    res.json({
-      user: {
-        id: user.id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        profileImage: user.profileImage
-      }
-    });
+    res.json(user);
   } catch (error: any) {
     res.status(500).json({ message: 'Error fetching user', error: error.message });
   }
-});
+};
+
+// Protected routes
+router.get('/me', authenticateUser, getCurrentUser);
+router.put('/me', authenticateUser, updateCurrentUser);
+router.delete('/me', authenticateUser, deleteCurrentUser);
+
+// Admin routes
+router.get('/:id', getUserByIdRoute);
 
 export default router; 
