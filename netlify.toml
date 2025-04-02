@@ -1,5 +1,5 @@
 [build]
-  command = "npm run build"
+  command = "npm run netlify-build"
   publish = ".next"
 
 [[plugins]]
@@ -11,7 +11,6 @@
   NETLIFY_USE_YARN = "false"
   NODE_VERSION = "18"
   NEXT_TELEMETRY_DISABLED = "1"
-  NEXT_FORCE_SWC = "true"
 
 [dev]
   command = "npm run dev"

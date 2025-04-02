@@ -6,9 +6,12 @@
     "dev": "next dev",
     "dev:backend": "cd backend && npm run dev",
     "dev:all": "start npm run dev && start npm run dev:backend",
+    "prebuild": "node remove-babel-config.js",
     "build": "DISABLE_ESLINT_PLUGIN=true next build",
+    "netlify-build": "node remove-babel-config.js && next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "postinstall": "node remove-babel-config.js"
   },
   "dependencies": {
     "next": "15.2.4",

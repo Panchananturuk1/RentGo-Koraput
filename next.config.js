@@ -12,12 +12,8 @@ const nextConfig = {
     // Disable TypeScript checking during builds
     ignoreBuildErrors: true,
   },
-  swcMinify: true,
   reactStrictMode: false,
   output: 'standalone',
-  experimental: {
-    forceSwcTransforms: true
-  }
 }
 
 module.exports = nextConfig 
