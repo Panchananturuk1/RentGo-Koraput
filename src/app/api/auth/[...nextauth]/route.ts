@@ -1,5 +1,6 @@
 import NextAuth from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
+import { getApiEndpoint } from '@/utils/api';
 
 const handler = NextAuth({
   providers: [
@@ -15,11 +16,11 @@ const handler = NextAuth({
         }
 
         try {
-          // Use 127.0.0.1 (IPv4) instead of localhost to avoid IPv6 issues
-          const apiUrl = 'http://127.0.0.1:5000';
-          console.log('NextAuth: Using API URL for login:', apiUrl);
+          // Get API endpoint using the shared utility
+          const loginEndpoint = getApiEndpoint('/api/auth/login');
+          console.log('NextAuth: Using login endpoint:', loginEndpoint);
 
-          const res = await fetch(`${apiUrl}/api/auth/login`, {
+          const res = await fetch(loginEndpoint, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

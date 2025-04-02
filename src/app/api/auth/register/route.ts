@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getApiEndpoint, handleApiError } from '@/utils/api';
 
 export async function POST(request: Request) {
   try {
@@ -17,14 +18,12 @@ export async function POST(request: Request) {
 
     console.log('Attempting to register user:', { firstName, lastName, email });
 
-    // Use 127.0.0.1 (IPv4) instead of localhost to avoid IPv6 issues
-    const apiUrl = 'http://127.0.0.1:5000';
-    console.log('Using API URL:', apiUrl);
+    // Get the registration endpoint using the shared utility
+    const registerEndpoint = getApiEndpoint('/api/auth/register');
+    console.log('Using register endpoint:', registerEndpoint);
 
     try {
-      console.log('Making request to backend API at:', `${apiUrl}/api/auth/register`);
-      
-      const response = await fetch(`${apiUrl}/api/auth/register`, {
+      const response = await fetch(registerEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -50,26 +49,11 @@ export async function POST(request: Request) {
       console.log('User registered successfully:', data);
       return NextResponse.json(data);
     } catch (fetchError: any) {
-      console.error('Backend connection error:', fetchError);
-      
-      // Check if it's a connection refused error
-      if (fetchError.cause?.code === 'ECONNREFUSED') {
-        console.error('Connection refused - backend server likely not running on', apiUrl);
-        return NextResponse.json(
-          { 
-            message: 'Unable to connect to the backend server. Please make sure it is running.',
-            details: `The backend server should be running on ${apiUrl}. Error: ${fetchError.cause?.syscall} ${fetchError.cause?.code} ${fetchError.cause?.address}:${fetchError.cause?.port}`
-          },
-          { status: 503 }
-        );
-      }
-      
+      // Use the shared error handler
+      const error = handleApiError(fetchError, registerEndpoint);
       return NextResponse.json(
-        { 
-          message: 'Network error, could not connect to the server',
-          error: fetchError.message 
-        },
-        { status: 503 }
+        { message: error.message, details: error.details, error: error.error },
+        { status: error.status }
       );
     }
   } catch (error: any) {

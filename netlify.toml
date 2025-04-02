@@ -5,9 +5,18 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
+# These environment variables are just defaults and will be overridden
+# by the environment variables set in the Netlify UI
 [build.environment]
-  NEXT_PUBLIC_API_URL = "https://your-backend-api-url.com"  # Update this with your backend API URL when deployed
-  NEXTAUTH_URL = "https://rentgo-koraput.netlify.app"  # Update this with your actual Netlify URL once deployed
+  # Backend API URL - IMPORTANT: This should be updated in the Netlify UI
+  # with your actual backend URL once it's deployed
+  NEXT_PUBLIC_API_URL = "https://rentgo-backend.example.com"
+  
+  # NextAuth configuration
+  NEXTAUTH_URL = "https://rentgo-koraput.netlify.app"
+  NEXTAUTH_SECRET = "rentgo-nextauth-secret"
+  
+  # Netlify and Node configuration
   NETLIFY_USE_YARN = "false"
   NODE_VERSION = "18"
   NEXT_TELEMETRY_DISABLED = "1"
