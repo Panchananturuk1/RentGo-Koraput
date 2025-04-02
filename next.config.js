@@ -15,6 +15,9 @@ const nextConfig = {
   swcMinify: true,
   reactStrictMode: false,
   output: 'standalone',
+  experimental: {
+    forceSwcTransforms: true
+  }
 }
 
 module.exports = nextConfig 
