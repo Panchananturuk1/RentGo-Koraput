@@ -1,0 +1,10 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[build.environment]
+  NEXT_PUBLIC_API_URL = "http://127.0.0.1:5000"  # Update this with your backend API URL when deployed
+  NEXTAUTH_URL = "https://rentgo-koraput.netlify.app"  # Update this with your actual Netlify URL once deployed 
