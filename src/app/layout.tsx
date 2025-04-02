@@ -1,7 +1,6 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import { getServerSession } from 'next-auth';
-import { SessionProvider } from '@/components/SessionProvider';
+import ClientAuthProvider from '@/components/ClientAuthProvider';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 
@@ -10,13 +9,11 @@ export const metadata: Metadata = {
   description: 'Rent bikes, tents, cars, and book accommodations in mountain areas of Koraput',
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getServerSession();
-
   return (
     <html lang="en">
       <head>
@@ -25,7 +22,7 @@ export default async function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-sans">
-        <SessionProvider session={session}>
+        <ClientAuthProvider>
           <div className="flex flex-col min-h-screen">
             <Navbar />
             <main className="flex-grow">
@@ -33,7 +30,7 @@ export default async function RootLayout({
             </main>
             <Footer />
           </div>
-        </SessionProvider>
+        </ClientAuthProvider>
       </body>
     </html>
   );
